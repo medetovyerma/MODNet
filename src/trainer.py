@@ -7,6 +7,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from segmentation_models_pytorch.utils.functional import iou
 
 __all__ = [
     'supervised_training_iter',
@@ -143,7 +144,7 @@ def supervised_training_iter(
     pred_semantic, pred_detail, pred_matte = modnet(image, False)
 
     # calculate the boundary mask from the trimap
-    boundaries = (trimap < 0.5) + (trimap > 0.5)
+    boundaries = (trimap == 0) + (trimap == 1)
 
     # calculate the semantic loss
     gt_semantic = F.interpolate(gt_matte, scale_factor=1/16, mode='bilinear')
@@ -170,8 +171,10 @@ def supervised_training_iter(
     loss.backward()
     optimizer.step()
 
+    semantic_iou = iou(pred_semantic, gt_semantic)
+
     # for test
-    return semantic_loss, detail_loss, matte_loss
+    return semantic_loss.item(), detail_loss.item(), matte_loss.item(), semantic_iou.item()
 
 
 def soc_adaptation_iter(
