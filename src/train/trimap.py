@@ -14,3 +14,9 @@ def makeTrimap(mask, width = 5):
    trimap = mask.astype(np.float)
    trimap[edgeMask == 1] = 0.5
    return trimap
+
+def makeTrimapMask(mask, width = 5):
+   edgeMask = makeEdgeMask(mask, width)
+   trimap = np.zeros_like(mask, dtype=np.float)
+   trimap[edgeMask == 1] = 0.5
+   return trimap
