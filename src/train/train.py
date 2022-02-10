@@ -41,11 +41,12 @@ def train(modnet, datasetPath: str, batch_size: int, startEpoch: int, modelsPath
     optimizer = torch.optim.SGD(modnet.parameters(), lr=lr, momentum=0.9)
     lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=int(0.25 * epochs), gamma=0.1, last_epoch=startEpoch)
 
+
     dataset = AiSegmentationDataset(datasetPath, 512, 5)
 
     TEST_PART = 0.1
-    indices = list(range(len(dataset)))
-    split = int(np.floor(TEST_PART * len(dataset)))
+    indices = list(range(len(dataset)))[:2000]
+    split = int(np.floor(TEST_PART * len(indices)))
     np.random.shuffle(indices)
     train_indices, test_indices = indices[split:], indices[:split]
 
@@ -55,11 +56,11 @@ def train(modnet, datasetPath: str, batch_size: int, startEpoch: int, modelsPath
     trainDataloader = DataLoader(dataset, batch_size, sampler=train_sampler, drop_last=True)
     testDataloader = DataLoader(dataset, batch_size, sampler=test_sampler, drop_last=True)
 
-    project = 'motionlearning/modnet'
-    api_token = 'eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vYXBwLm5lcHR1bmUuYWkiLCJhcGlfdXJsIjoiaHR0cHM6Ly9hcHAubmVwdHVuZS5haSIsImFwaV9rZXkiOiI2NmJhMzJiMC1iY2M0LTQ5NGUtOGI0OS0yYzA4ZmNiNTRiMmEifQ=='
-    neptuneRun = neptune.init(project = project,
-                            api_token = api_token,
-                            source_files=[])
+    # project = 'motionlearning/modnet'
+    # api_token = 'eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vYXBwLm5lcHR1bmUuYWkiLCJhcGlfdXJsIjoiaHR0cHM6Ly9hcHAubmVwdHVuZS5haSIsImFwaV9rZXkiOiI2NmJhMzJiMC1iY2M0LTQ5NGUtOGI0OS0yYzA4ZmNiNTRiMmEifQ=='
+    # neptuneRun = neptune.init(project = project,
+    #                         api_token = api_token,
+    #                         source_files=[])
 
     for epoch in range(0, epochs):
         for idx, (image, trimap, gt_matte) in enumerate(trainDataloader):
@@ -69,10 +70,10 @@ def train(modnet, datasetPath: str, batch_size: int, startEpoch: int, modelsPath
             semantic_loss, detail_loss, matte_loss, semantic_iou = supervised_training_iter(modnet, optimizer, image, trimap, gt_matte, semantic_scale=1, detail_scale=10, matte_scale=1)
             if idx % 100 == 0:
                 logger.info(f'idx: {idx}, semantic_loss: {semantic_loss:.5f}, detail_loss: {detail_loss:.5f}, matte_loss: {matte_loss:.5f}, semantic_iou: {semantic_iou:.5f}')
-                logNeptune(neptuneRun, "batch", semantic_loss, detail_loss, matte_loss, semantic_iou)
+                #logNeptune(neptuneRun, "batch", semantic_loss, detail_loss, matte_loss, semantic_iou)
         logger.info(f'Epoch: {epoch}, semantic_loss: {semantic_loss:.5f}, detail_loss: {detail_loss:.5f}, matte_loss: {matte_loss:.5f}, semantic_iou: {semantic_iou:.5f}')
         
-        logNeptune(neptuneRun, "epoch", semantic_loss, detail_loss, matte_loss, semantic_iou)
+        #logNeptune(neptuneRun, "epoch", semantic_loss, detail_loss, matte_loss, semantic_iou)
 
         modelPath = os.path.join(modelsPath, f"model_epoch{epoch}.ckpt")
         torch.save(modnet.state_dict(), modelPath)
@@ -81,7 +82,7 @@ def train(modnet, datasetPath: str, batch_size: int, startEpoch: int, modelsPath
 
     torch.save(modnet.state_dict(), os.path.join(modelsPath, "model.ckpt"))
 
-    neptuneRun.stop()
+    #neptuneRun.stop()
 
 def tune(modnet, datasetPath: str, batch_size: int, modelsPath: str, device: str):
     pass
